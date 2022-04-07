@@ -135,7 +135,7 @@ void function VoteMapInit(){
         string modeList = ""; // compile a string of gamemodes
         foreach (string modeString in mode) {
           if (modeString in modeNameTable) {  // check if this is a valid gamemode
-            printl("Gamemode type " + modeString + " found in valid gamemodes");
+            printl("Mode " + modeString + " found in " + mode[0] + " gamemodes");
 
             // Do not allow switching to FFA from non-FFA and vice-versa
             if ((IsFFAGame() && ffa_modes.find(modeString) >= 0) ||
@@ -143,22 +143,22 @@ void function VoteMapInit(){
               modeList = modeList + " " + modeString;
 
               // set to true since we've found at least one map with defined modes
-              // If this remains false, we won't show game mode on the vote menu since it'll all be the same thing
+              // If this remains false, we won't show game mode on the vote menu since it'll all be the same mode anyway
               showModes = true;
             }
-            else {
+            else { // Debug message if the map was not added due to incorrect FFA type
               printl("Ignored due to different FFA type");
             }
 
           }
-          else {
+          else { // Debug message to check if an attempt to add the gametype was made
             printl("Mode " + modeString + " not found in valid modes");
           }
         }
         modes.append(modeList);
     }
 
-    printl(cvar);
+    printl(cvar); // Debug to check if all maps were read through the convar as expected
 }
 
 /*
@@ -234,13 +234,18 @@ bool function CommandVote(entity player, array<string> args){
         }
         else {
             // Doesnt let the player vote twice, name is saved so even on reconnect they cannot vote twice
-            SendHudMessageBuilder(player, ALREADY_VOTED, 255, 200, 200)
+            //SendHudMessageBuilder(player, ALREADY_VOTED, 255, 200, 200)
+            ShowProposedMaps(player);
             return false
         }
     }
 
-    SendHudMessageBuilder(player, MAP_YOU_VOTED + TryGetNormalizedMapName(proposedMaps[args[0].tointeger()-1]), 200, 200, 200)
+    //SendHudMessageBuilder(player, MAP_YOU_VOTED + TryGetNormalizedMapName(proposedMaps[args[0].tointeger()-1]), 200, 200, 200)
     SetNextMap(args[0].tointeger())
+    // Show current tally to each player
+    foreach(entity tally_player in GetPlayerArray()){
+        ShowProposedMaps(tally_player)
+    }
     return true
 }
 
@@ -273,10 +278,12 @@ void function PostmatchMap(){ // change map before the server changes it lololol
 void function ChangeMapBeforeServer(){
     wait GAME_POSTMATCH_LENGTH - 1 // change 1 sec before server does
     if(nextMap != "") {
+        //SetConVarString("setplaylist", nextMode); // crashes with error "ConVar setplaylist is not valid"
         GameRules_ChangeMap(nextMap, nextMode)
     }
     else {
         int randomMapIndex = rndint(maps.len());
+        //SetConVarString("setplaylist", getRandomModeForMap(randomMapIndex));
         GameRules_ChangeMap(maps[randomMapIndex], getRandomModeForMap(randomMapIndex))
     }
 }
@@ -313,18 +320,31 @@ bool function IsMapNumValid(string x){
 
 void function ShowProposedMaps(entity player){
     // create message
-    string message = MAP_VOTE_USAGE + "\n"
+    string message = "";
+    // Only show instructions if vote has not been cast yet
+    if (!PlayerHasVoted(player, playerMapVoteNames)) message += MAP_VOTE_USAGE + "\n";
+    else message += VOTED + "\n";
+
     for (int i = 1; i <= proposedMaps.len(); i++) {
         string map = TryGetNormalizedMapName(proposedMaps[i-1])
         message += i + ": " + map
         if (showModes) { // Only show game mode if games modes are defined in config
           message += " (" + TryGetNormalizedModeName(proposedModes[i-1]) + ")";
         }
+
+        // Get how many votes this map currently has
+        int voteDataIndex = FindMvdInVoteData(proposedMaps[i-1]);
+        if (voteDataIndex >= 0) {
+          if (voteData[voteDataIndex].votes > 0) {
+            message += " - " + voteData[voteDataIndex].votes + " vote";
+            if (voteData[voteDataIndex].votes > 1) message += "s";
+          }
+        }
         message += "\n";
     }
 
     // message player
-    SendHudMessage( player, message, -0.925, 0.4, 255, 255, 255, 255, 0.15, 30, 1 )
+    SendHudMessage( player, message, -0.925, 0.4, 255, 255, 255, 255, 0, 30, 1 )
 }
 
 void function FillProposedMaps(){
@@ -365,9 +385,9 @@ string function getRandomModeForMap(int mapIndex) {
   // Get modes available for this map
   string tempMode = strip(GetConVarString("mp_gamemode")); // or mp_gamemode?
   //string tempMode = GameRules_GetGameMode();
-  if (tempMode.len() == 0) {
+  if (tempMode.len() == 0) { // Set to safe option if undefined as some combinations can crash
     if (IsFFAGame()) tempMode = "ffa";
-    else tempMode = "tdm"; // Set to safe option as some combinations can crash
+    else tempMode = "tdm";
   }
 
   array<string> tempModes = split( strip(modes[mapIndex]), " " );
@@ -390,7 +410,7 @@ void function SetNextMap(int num, bool force = false){
     if(index != -1){
         // increase votes
         temp = voteData[index]
-        temp.votes = temp.votes + 1
+        temp.votes++
     }
     else{ // add to array
         temp.votes = 1
