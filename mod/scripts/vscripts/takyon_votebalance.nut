@@ -105,10 +105,13 @@ void function Balance(array<entity> _players){
     array<PlayerKDData> playerRanks = GetPlayersSortedBySkill(_players)
 
     for(int i = 0; i < GetPlayerArray().len(); i++){
-        if(!IsEven(i))
-            SetTeam(playerRanks[i].player, TEAM_IMC)
-        else
-            SetTeam(playerRanks[i].player, TEAM_MILITIA)
+
+        // Only switch teams if the player is not in an FFA mode
+        // otherwise, client will crash upon opening scoreboard
+        if (!IsFFAGame()) {
+          if(!IsEven(i)) SetTeam(playerRanks[i].player, TEAM_IMC)
+          else SetTeam(playerRanks[i].player, TEAM_MILITIA)
+        }
     }
 }
 
