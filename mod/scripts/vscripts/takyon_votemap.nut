@@ -95,6 +95,8 @@ table<string, string> modeNameTable = {
     tt = "Titan Tag"
 }
 
+// An array of strings for modes defined as ffa
+// We will use these to ensure we don't change gamemode from an FFA mode to a non-FFA mode and vice-versa
 array<string> ffa_modes = [
   "coliseum",
   "ffa",
