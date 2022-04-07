@@ -4,6 +4,7 @@
 
 // general
 global const string ALREADY_VOTED = "You have already voted!"
+global const string VOTED = "Vote has been cast"
 global const string MISSING_PRIVILEGES = "Missing Privileges!"
 global const string COMMAND_DISABLED = "This Command is disabled"
 global const string NO_PLAYERNAME_FOUND = "No name given"
