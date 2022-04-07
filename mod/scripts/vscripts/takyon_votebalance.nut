@@ -101,16 +101,15 @@ void function BalanceMapEnd() {
 }
 
 void function Balance(array<entity> _players){
-    // sort players based on kd
-    array<PlayerKDData> playerRanks = GetPlayersSortedBySkill(_players)
+    // Only switch teams if the player is not in an FFA mode
+    // otherwise, client will crash upon opening scoreboard
+    if (!IsFFAGame()) {
+        // sort players based on kd
+        array<PlayerKDData> playerRanks = GetPlayersSortedBySkill(_players)
 
-    for(int i = 0; i < GetPlayerArray().len(); i++){
-
-        // Only switch teams if the player is not in an FFA mode
-        // otherwise, client will crash upon opening scoreboard
-        if (!IsFFAGame()) {
-          if(!IsEven(i)) SetTeam(playerRanks[i].player, TEAM_IMC)
-          else SetTeam(playerRanks[i].player, TEAM_MILITIA)
+        for (int i = 0; i < GetPlayerArray().len(); i++) {
+            if(!IsEven(i)) SetTeam(playerRanks[i].player, TEAM_IMC)
+            else SetTeam(playerRanks[i].player, TEAM_MILITIA)
         }
     }
 }
