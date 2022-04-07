@@ -177,7 +177,7 @@ This mod can be configured using the following [ConVars](https://r2northstar.git
 | `pv_map_map_propose_amount`       | how many maps to propose. KEEP THIS LOWER THAN THE AMOUNT OF MAPS YOU HAVE IN pv_maps!!! 5 maps in pv_maps -> set this to 4 maximum        | `6`                                                    | int                |
 | `pv_maps`                         | This is your map-pool. One of these maps will be chosen as the next map, allowing you to make a custom map rotation regardless of gamemode | `all maps "mp_angel_city, mp_black_water_canal,..."` | string             |
 | `pv_maps2`                        | Additional cvar because you might reach the limit on pv_maps especially if specifying gamemodes. Do not add leading or trailing comma. | `"mp_lf_deck cp ctf ps mfd gg ffa, mp_wargames fastball cp ctf aitdm ttdm lts,..."` | string             |
-| `pv_maps3`                        | As above. | string             |
+| `pv_maps3`                        | As above. | | string             |
 | `pv_welcome_enabled`              | Will send a welcome message when a player first joins the match                                                                            | `1`                                                    | 0-1                |
 
 # Adding rules
