@@ -42,9 +42,9 @@ It is recommended to have ```sv_cheats``` set to ```0``` at all times, however i
 - Add a welcome message in ```takyon_welcome.nut``` or disable it in ```mod.json```
 - Add rules in ```takyon_rules.nut``` or disable them in ```mod.json```
 - Add your server name and discord in ```mod.json```
-- Set a custom map pool in ```mod.json``` under ```pv_maps``` 
+- Set a custom map pool in ```mod.json``` under ```pv_maps```
 
-**Note: everything in ```mod.json``` can instead be set in ```\Titanfall2\R2Northstar\mods\Northstar.CustomServers\mod\cfg\autoexec_ns_server.cfg``` to allow for different configurations on different servers** 
+**Note: everything in ```mod.json``` can instead be set in ```\Titanfall2\R2Northstar\mods\Northstar.CustomServers\mod\cfg\autoexec_ns_server.cfg``` to allow for different configurations on different servers**
 
 ---
 
@@ -176,6 +176,8 @@ This mod can be configured using the following [ConVars](https://r2northstar.git
 | `pv_map_time_frac`                | When during the match the map vote is displayed. 0.5 would be halftime, 0.8 after 80% of the match is over                                 | `0.5`                                                  | float              |
 | `pv_map_map_propose_amount`       | how many maps to propose. KEEP THIS LOWER THAN THE AMOUNT OF MAPS YOU HAVE IN pv_maps!!! 5 maps in pv_maps -> set this to 4 maximum        | `6`                                                    | int                |
 | `pv_maps`                         | This is your map-pool. One of these maps will be chosen as the next map, allowing you to make a custom map rotation regardless of gamemode | `all maps "mp_angel_city, mp_black_water_canal,..."` | string             |
+| `pv_maps2`                        | Additional cvar because you might reach the limit on pv_maps especially if specifying gamemodes. Do not add leading or trailing comma. | string             |
+| `pv_maps3`                        | As above. | string             |
 | `pv_welcome_enabled`              | Will send a welcome message when a player first joins the match                                                                            | `1`                                                    | 0-1                |
 
 # Adding rules
