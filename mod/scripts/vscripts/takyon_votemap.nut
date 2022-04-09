@@ -95,9 +95,10 @@ table<string, string> modeNameTable = {
     tt = "Titan Tag"
 }
 
-// An array of strings for modes defined as ffa
-// We will use these to ensure we don't change gamemode from an FFA mode to a non-FFA mode and vice-versa
-array<string> ffa_modes = [
+/*  An array of strings for modes defined as ffa
+    We will use these to ensure we don't change gamemode from an FFA mode to a non-FFA mode and vice-versa
+*/
+array<string> FFAModes = [
   "coliseum",
   "ffa",
   "fra",
@@ -119,35 +120,36 @@ void function VoteMapInit(){
     howManyMapsToPropose = GetConVarInt( "pv_map_map_propose_amount" )
 
     // If defined, add additional maps cvar
-    if (GetConVarString( "pv_maps2" ).len() > 0) {
-      cvar += "," + GetConVarString( "pv_maps2" );
-    }
-    if (GetConVarString( "pv_maps3" ).len() > 0) {
-      cvar += "," + GetConVarString( "pv_maps3" );
+    // These convars must be defined in mod.json therefore we specify the limits
+    for(int i = 2; i <= 3; i++) {
+      if (GetConVarString("pv_maps" + i).len() > 0) {
+        cvar += "," + GetConVarString("pv_maps" + i);
+      }
     }
 
-    array<string> dirtyMaps = split( cvar, "," )
+    array<string> dirtyMaps = split( cvar, "," ) // Get list of unsanitised values from convar pv_maps
     foreach ( string map in dirtyMaps ) {
-        array<string> mode = split(strip(map), " ");  // split game modes from map name
-        maps.append(mode[0]); // first string in array is map name
-        printl("Map " + mode[0] + " added to list of maps");
+        array<string> mode = split(strip(map), " ");  // split game modes from map name, strip any leading or trailing spaces
+        maps.append(mode[0]); // first string in array is map name, add it to list of maps
+        mode.remove(0);
+        printl(maps.top() + " added to list of maps");
 
         string modeList = ""; // compile a string of gamemodes
         foreach (string modeString in mode) {
           if (modeString in modeNameTable) {  // check if this is a valid gamemode
-            printl("Mode " + modeString + " found in " + mode[0] + " gamemodes");
 
             // Do not allow switching to FFA from non-FFA and vice-versa
-            if ((IsFFAGame() && ffa_modes.find(modeString) >= 0) ||
-              (!IsFFAGame() && ffa_modes.find(modeString) < 0)) {
-              modeList = modeList + " " + modeString;
+            if ((IsFFAGame() && FFAModes.find(modeString) >= 0) ||
+              (!IsFFAGame() && FFAModes.find(modeString) < 0)) {
+              modeList += " " + modeString;
+              printl("- " + modeString + " gamemode added");
 
               // set to true since we've found at least one map with defined modes
               // If this remains false, we won't show game mode on the vote menu since it'll all be the same mode anyway
               showModes = true;
             }
             else { // Debug message if the map was not added due to incorrect FFA type
-              printl("Ignored due to different FFA type");
+              printl("- " + modeString + " ignored due to wrong FFA type");
             }
 
           }
@@ -155,10 +157,9 @@ void function VoteMapInit(){
             printl("Mode " + modeString + " not found in valid modes");
           }
         }
-        modes.append(modeList);
+        modes.append(strip(modeList));
     }
 
-    printl(cvar); // Debug to check if all maps were read through the convar as expected
 }
 
 /*
@@ -277,15 +278,15 @@ void function PostmatchMap(){ // change map before the server changes it lololol
 
 void function ChangeMapBeforeServer(){
     wait GAME_POSTMATCH_LENGTH - 1 // change 1 sec before server does
-    if(nextMap != "") {
-        //SetConVarString("setplaylist", nextMode); // crashes with error "ConVar setplaylist is not valid"
-        GameRules_ChangeMap(nextMap, nextMode)
-    }
-    else {
+
+    if(nextMap == "") { // if nextMap has not been determined, pick a random one
         int randomMapIndex = rndint(maps.len());
-        //SetConVarString("setplaylist", getRandomModeForMap(randomMapIndex));
-        GameRules_ChangeMap(maps[randomMapIndex], getRandomModeForMap(randomMapIndex))
+        nextMap = maps[randomMapIndex];
+        nextMode = getRandomModeForMap(randomMapIndex);
     }
+
+    ServerCommand("setplaylist " + nextMode); // Update gamemode for server browser
+    GameRules_ChangeMap(nextMap, nextMode);
 }
 
 /*
@@ -303,11 +304,9 @@ string function TryGetNormalizedMapName(string mapName){
     }
 }
 
-string function TryGetNormalizedModeName(string modeName){
-    if (modeName in modeNameTable) {
-        return modeNameTable[modeName];
-    }
-    return modeName
+string function TryGetNormalizedModeName(string modeName) {
+    if (modeName in modeNameTable) return modeNameTable[modeName];
+    return modeName;
 }
 
 bool function IsMapNumValid(string x){
@@ -337,7 +336,7 @@ void function ShowProposedMaps(entity player){
         if (voteDataIndex >= 0) {
           if (voteData[voteDataIndex].votes > 0) {
             message += " - " + voteData[voteDataIndex].votes + " vote";
-            if (voteData[voteDataIndex].votes > 1) message += "s";
+            if (voteData[voteDataIndex].votes > 1) message += "s";  // make plural if more than 1 vote
           }
         }
         message += "\n";
@@ -383,23 +382,27 @@ void function FillProposedMaps(){
 */
 string function getRandomModeForMap(int mapIndex) {
   // Get modes available for this map
-  string tempMode = strip(GetConVarString("mp_gamemode")); // or mp_gamemode?
-  //string tempMode = GameRules_GetGameMode();
-  if (tempMode.len() == 0) { // Set to safe option if undefined as some combinations can crash
-    if (IsFFAGame()) tempMode = "ffa";
-    else tempMode = "tdm";
-  }
+  string randomMode = strip(GetConVarString("mp_gamemode")); // By default, set gamemode to what's configured in startup args
 
-  array<string> tempModes = split( strip(modes[mapIndex]), " " );
-  if (tempModes.len() > 0) {
-    printl("Gamemodes available for map " + maps[mapIndex] + " are " + modes[mapIndex]);
-    tempMode = tempModes[rndint(tempModes.len())];  // Select one random mode from available modes
+  // Populate list of assigned gamemodes
+  array<string> randomModes = split( strip(modes[mapIndex]), " " );
+
+  if (randomModes.len() > 0) { // If modes have been assigned
+    printl(maps[mapIndex] + " available modes are " + modes[mapIndex]);
+    randomMode = randomModes[rndint(randomModes.len())];  // Select one random mode from available modes
   }
   else {
-    printl("No defined gamemodes for map " + maps[mapIndex]);
+    printl(maps[mapIndex] + " no gamemodes specified");
   }
-  printl("Gamemode for map " + maps[mapIndex] + " selected as " + tempMode);
-  return(tempMode);
+
+  // Set to safe option if still undefined
+  if (randomMode.len() == 0) {
+    if (IsFFAGame()) randomMode = "ffa";
+    else randomMode = "tdm";
+  }
+
+  printl("- " + randomMode + " selected");
+  return(randomMode);
 }
 
 void function SetNextMap(int num, bool force = false){
