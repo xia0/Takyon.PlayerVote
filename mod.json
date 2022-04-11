@@ -13,7 +13,7 @@
 		},
 		{
 			"Name": "pv_servername",
-			"DefaultValue": "Karma Kraber9k" // change this to your servername
+			"DefaultValue": "YOUR SERVER" // change this to your servername
 		},
 		{
 			"Name": "pv_discord",
