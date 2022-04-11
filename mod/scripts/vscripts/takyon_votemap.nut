@@ -178,9 +178,30 @@ void function PlayingMap(){
     if(!IsLobby()){
         while(voteMapEnabled && !mapsHaveBeenProposed){
             wait 10
+
+            /*
+            printl(float(GameRules_GetTeamScore(GameScore_GetWinningTeam())))
+            printl(float(GetRoundScoreLimit_FromPlaylist()))
+            printl(float(GetScoreLimit_FromPlaylist()))
+            printl(float(GameRules_GetTeamScore(GameScore_GetWinningTeam())) / float(GetRoundScoreLimit_FromPlaylist()));
+            */
+
             // check if halftime or whatever
             float endTime = expect float(GetServerVar("gameEndTime"))
-            if(Time() / endTime >= mapTimeFrac && Time() > 5.0 && !mapsHaveBeenProposed){
+            if (
+                (
+                  // Check for time or score if it's not round based
+                  (!IsRoundBased() &&
+                    (
+                      Time() / endTime >= mapTimeFrac
+                      || float(GameRules_GetTeamScore(GameScore_GetWinningTeam())) / float(GetScoreLimit_FromPlaylist()) >= mapTimeFrac
+                    )
+                  )
+                  // Check for team score on round based modes
+                  || (IsRoundBased() && float(GameRules_GetTeamScore2(GameScore_GetWinningTeam())) / float(GetRoundScoreLimit_FromPlaylist()) >= mapTimeFrac)
+                )
+                && Time() > 5.0
+                && !mapsHaveBeenProposed) {
                 FillProposedMaps()
             }
         }
@@ -329,6 +350,7 @@ void function ShowProposedMaps(entity player){
       string map = TryGetNormalizedMapName(proposedMaps[i-1])
       message += i + ": " + map
       if (showModes) { // Only show game mode if games modes are defined in config
+        // Maybe one day we can use GetGameModeDisplayName
         message += " (" + TryGetNormalizedModeName(proposedModes[i-1]) + ")";
       }
 
@@ -349,6 +371,7 @@ void function ShowProposedMaps(entity player){
 }
 
 void function FillProposedMaps(){
+    if (mapsHaveBeenProposed) return; // Do not run again if maps have already been proposed
     printl("Proposing maps")
     if(howManyMapsToPropose >= maps.len()){
         printl("\n\n[PLAYERVOTE][ERROR] pv_map_map_propose_amount is not lower than pv_maps! Set it to a lower number than the amount of maps in your map pool!\n\n")
