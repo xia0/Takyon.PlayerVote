@@ -135,7 +135,7 @@ void function VoteMapInit(){
            - may prevent possible infinite loop later when random maps are being selected
              especially if number of maps to propose are equal to maps in rotation
         */
-        if (mode[0] != GetMapName()) {
+        if (mode[0] != GetMapName() || dirtyMaps.len() == 1) {
           maps.append(mode[0]); // first string in array is map name, add it to list of maps
           mode.remove(0);
           printl(maps.top() + " added to list of maps");
