@@ -130,34 +130,41 @@ void function VoteMapInit(){
     array<string> dirtyMaps = split( cvar, "," ) // Get list of unsanitised values from convar pv_maps
     foreach ( string map in dirtyMaps ) {
         array<string> mode = split(strip(map), " ");  // split game modes from map name, strip any leading or trailing spaces
-        maps.append(mode[0]); // first string in array is map name, add it to list of maps
-        mode.remove(0);
-        printl(maps.top() + " added to list of maps");
 
-        string modeList = ""; // compile a string of gamemodes
-        foreach (string modeString in mode) {
-          if (modeString in modeNameTable) {  // check if this is a valid gamemode
+        /* Do not add map if it is current map
+           - may prevent possible infinite loop later when random maps are being selected
+             especially if number of maps to propose are equal to maps in rotation
+        */
+        if (mode[0] != GetMapName()) {
+          maps.append(mode[0]); // first string in array is map name, add it to list of maps
+          mode.remove(0);
+          printl(maps.top() + " added to list of maps");
 
-            // Do not allow switching to FFA from non-FFA and vice-versa
-            if ((IsFFAGame() && FFAModes.find(modeString) >= 0) ||
-              (!IsFFAGame() && FFAModes.find(modeString) < 0)) {
-              modeList += " " + modeString;
-              printl("- " + modeString + " gamemode added");
+          string modeList = ""; // compile a string of gamemodes
+          foreach (string modeString in mode) {
+            if (modeString in modeNameTable) {  // check if this is a valid gamemode
 
-              // set to true since we've found at least one map with defined modes
-              // If this remains false, we won't show game mode on the vote menu since it'll all be the same mode anyway
-              showModes = true;
+              // Do not allow switching to FFA from non-FFA and vice-versa
+              if ((IsFFAGame() && FFAModes.find(modeString) >= 0) ||
+                (!IsFFAGame() && FFAModes.find(modeString) < 0)) {
+                modeList += " " + modeString;
+                printl("- " + modeString + " gamemode added");
+
+                // set to true since we've found at least one map with defined modes
+                // If this remains false, we won't show game mode on the vote menu since it'll all be the same mode anyway
+                showModes = true;
+              }
+              else { // Debug message if the map was not added due to incorrect FFA type
+                printl("- " + modeString + " ignored due to wrong FFA type");
+              }
+
             }
-            else { // Debug message if the map was not added due to incorrect FFA type
-              printl("- " + modeString + " ignored due to wrong FFA type");
+            else { // Debug message to check if an attempt to add the gametype was made
+              printl("Mode " + modeString + " not found in valid modes");
             }
-
           }
-          else { // Debug message to check if an attempt to add the gametype was made
-            printl("Mode " + modeString + " not found in valid modes");
-          }
-        }
-        modes.append(strip(modeList));
+          modes.append(strip(modeList));
+      }
     }
 
 }
@@ -325,7 +332,6 @@ void function ShowProposedMaps(entity player){
         message += " (" + TryGetNormalizedModeName(proposedModes[i-1]) + ")";
       }
 
-      /*
       // Show how many votes this map currently has
       int voteDataIndex = FindMvdInVoteData(proposedMaps[i-1]);
       if (voteDataIndex >= 0) {
@@ -334,7 +340,6 @@ void function ShowProposedMaps(entity player){
           if (voteData[voteDataIndex].votes > 1) message += "s";  // make plural if more than 1 vote
         }
       }
-      */
 
       message += "\n";
   }
@@ -366,7 +371,7 @@ void function FillProposedMaps(){
     foreach(entity player in GetPlayerArray()){
         ShowProposedMaps(player)
     }
-    
+
     Chat_ServerBroadcast("\x1b[38;2;220;220;0m[PlayerVote] \x1b[0mTo vote type !vote number in chat. \x1b[38;2;0;220;220m(Ex. !vote 2)")
     mapsProposalTimeLeft = Time()
     mapsHaveBeenProposed = true
