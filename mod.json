@@ -144,6 +144,8 @@
 		{ "Name": "pv_maps2", "DefaultValue": "" },
 		{ "Name": "pv_maps3", "DefaultValue": "" },
 		{ "Name": "pv_maps4", "DefaultValue": "" },
+		{ "Name": "pv_nextmap", "DefaultValue": "" },
+		{ "Name": "pv_nextmode", "DefaultValue": "" },
 		{
 			"Name": "pv_welcome_enabled",
 			"DefaultValue": "1" // show welcome msg, 1: true | 0: false

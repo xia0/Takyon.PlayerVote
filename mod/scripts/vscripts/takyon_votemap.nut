@@ -95,19 +95,14 @@ table<string, string> modeNameTable = {
     tt = "Titan Tag"
 }
 
-/*  An array of strings for modes defined as ffa
-    We will use these to ensure we don't change gamemode from an FFA mode to a non-FFA mode and vice-versa
-*/
-array<string> FFAModes = [
-  "coliseum",
-  "ffa",
-  "fra",
-  "gg",
-  "tffa",
-  "sns"
-];
-
 void function VoteMapInit(){
+
+    /* We might be in lobby because we are changing gamemodes */
+    if (GetMapName() == "mp_lobby" && GetConVarString("pv_nextmap").len() > 0) {
+      thread ChangeMapFromLobby_Threaded();
+    }
+
+
     // add commands here. i added some varieants for accidents, however not for brain damage. do whatever :P
     AddClientCommandCallback("!vote", CommandVote) //!vote force 3 will force the map if your name is in adminNames
     AddClientCommandCallback("!VOTE", CommandVote)
@@ -132,8 +127,7 @@ void function VoteMapInit(){
         array<string> mode = split(strip(map), " ");  // split game modes from map name, strip any leading or trailing spaces
 
         /* Do not add map if it is current map
-           - may prevent possible infinite loop later when random maps are being selected
-             especially if number of maps to propose are equal to maps in rotation
+            - Unless there is only one map specified
         */
         if (mode[0] != GetMapName() || dirtyMaps.len() == 1) {
           maps.append(mode[0]); // first string in array is map name, add it to list of maps
@@ -143,30 +137,60 @@ void function VoteMapInit(){
           string modeList = ""; // compile a string of gamemodes
           foreach (string modeString in mode) {
             if (modeString in modeNameTable) {  // check if this is a valid gamemode
-
-              // Do not allow switching to FFA from non-FFA and vice-versa
-              if ((IsFFAGame() && FFAModes.find(modeString) >= 0) ||
-                (!IsFFAGame() && FFAModes.find(modeString) < 0)) {
-                modeList += " " + modeString;
-                printl("- " + modeString + " gamemode added");
-
-                // set to true since we've found at least one map with defined modes
-                // If this remains false, we won't show game mode on the vote menu since it'll all be the same mode anyway
-                showModes = true;
-              }
-              else { // Debug message if the map was not added due to incorrect FFA type
-                printl("- " + modeString + " ignored due to wrong FFA type");
-              }
-
+              // set to true since we've found at least one map with defined modes
+              // If this remains false, we won't show game mode on the vote menu since it'll all be the same mode anyway
+              showModes = true;
+              modeList += " " + modeString;
             }
             else { // Debug message to check if an attempt to add the gametype was made
               printl("Mode " + modeString + " not found in valid modes");
             }
           }
+
+          if (modeList.len() > 0) printl("- " + modeList);
+          else printl("- no gamemodes specified");
           modes.append(strip(modeList));
       }
     }
 
+/*
+    printl("aitdm - " + GetMaxTeamsForPlaylistName("aitdm"));
+    printl("at - " + GetMaxTeamsForPlaylistName("at"));
+    printl("coliseum - " + GetMaxTeamsForPlaylistName("coliseum"));
+    printl("cp - " + GetMaxTeamsForPlaylistName("cp"));
+    printl("ctf - " + GetMaxTeamsForPlaylistName("ctf"));
+    printl("fd_easy - " + GetMaxTeamsForPlaylistName("fd_easy"));
+    printl("fd_hard - " + GetMaxTeamsForPlaylistName("fd_hard"));
+    printl("fd_insane - " + GetMaxTeamsForPlaylistName("fd_insane"));
+    printl("fd_master - " + GetMaxTeamsForPlaylistName("fd_master"));
+    printl("fd_normal - " + GetMaxTeamsForPlaylistName("fd_normal"));
+    printl("lf - " + GetMaxTeamsForPlaylistName("lf"));
+    printl("lts - " + GetMaxTeamsForPlaylistName("lts"));
+    printl("mfd - " + GetMaxTeamsForPlaylistName("mfd"));
+    printl("ps - " + GetMaxTeamsForPlaylistName("ps"));
+    printl("solo - " + GetMaxTeamsForPlaylistName("solo"));
+    printl("tdm - " + GetMaxTeamsForPlaylistName("tdm"));
+    printl("ttdm - " + GetMaxTeamsForPlaylistName("ttdm"));
+    printl("alts - " + GetMaxTeamsForPlaylistName("alts"));
+    printl("attdm - " + GetMaxTeamsForPlaylistName("attdm"));
+    printl("ffa - " + GetMaxTeamsForPlaylistName("ffa"));
+    printl("fra - " + GetMaxTeamsForPlaylistName("fra"));
+    printl("holopilot_lf - " + GetMaxTeamsForPlaylistName("holopilot_lf"));
+    printl("rocket_lf - " + GetMaxTeamsForPlaylistName("rocket_lf"));
+    printl("turbo_lts - " + GetMaxTeamsForPlaylistName("turbo_lts"));
+    printl("turbo_ttdm - " + GetMaxTeamsForPlaylistName("turbo_ttdm"));
+    printl("chamber - " + GetMaxTeamsForPlaylistName("chamber"));
+    printl("ctf_comp - " + GetMaxTeamsForPlaylistName("ctf_comp"));
+    printl("fastball - " + GetMaxTeamsForPlaylistName("fastball"));
+    printl("gg - " + GetMaxTeamsForPlaylistName("gg"));
+    printl("hs - " + GetMaxTeamsForPlaylistName("hs"));
+    printl("inf - " + GetMaxTeamsForPlaylistName("inf"));
+    printl("kr - " + GetMaxTeamsForPlaylistName("kr"));
+    printl("sbox - " + GetMaxTeamsForPlaylistName("sbox"));
+    printl("sns - " + GetMaxTeamsForPlaylistName("sns"));
+    printl("tffa - " + GetMaxTeamsForPlaylistName("tffa"));
+    printl("tt - " + GetMaxTeamsForPlaylistName("tt"));
+*/
 }
 
 /*
@@ -300,16 +324,30 @@ void function PostmatchMap(){ // change map before the server changes it lololol
 }
 
 void function ChangeMapBeforeServer(){
-    wait GAME_POSTMATCH_LENGTH - 1 // change 1 sec before server does
 
     if(nextMap == "") { // if nextMap has not been determined, pick a random one
         int randomMapIndex = rndint(maps.len());
         nextMap = maps[randomMapIndex];
+
+        // Check if we're allowing possible change to FFA gamemode if the server is empty
         nextMode = getRandomModeForMap(randomMapIndex);
     }
 
-    ServerCommand("setplaylist " + nextMode); // Update gamemode for server browser
-    GameRules_ChangeMap(nextMap, nextMode);
+    // change 1 sec before server does
+    // Change immediately if next mode is different team size to current mode to prevent client kick
+    if (GetMaxTeamsForPlaylistName(GameRules_GetGameMode()) != GetMaxTeamsForPlaylistName(nextMode)) {
+      // If team size is different, a quick change to lobby will facilitate clients not being kicked
+      SetConVarString("pv_nextmap", nextMap); // We save which map we should be changing to into a convar
+      SetConVarString("pv_nextmode", nextMode);
+      SetCurrentPlaylist( "private_match" );
+      GameRules_ChangeMap( "mp_lobby", GameRules_GetGameMode() );
+    }
+    else {
+      if (GetMaxTeamsForPlaylistName(nextMode) <= 2) wait GAME_POSTMATCH_LENGTH - 1 // No wait on FFA modes to prevent client kick
+      ServerCommand("setplaylist " + nextMode); // Update gamemode for server browser
+      SetCurrentPlaylist(nextMode);
+      GameRules_ChangeMap(nextMap, nextMode);
+    }
 }
 
 /*
@@ -407,22 +445,26 @@ void function FillProposedMaps(){
 string function getRandomModeForMap(int mapIndex) {
   // Get modes available for this map
   string randomMode = strip(GetConVarString("mp_gamemode")); // By default, set gamemode to what's configured in startup args
+  printl(maps[mapIndex]);
 
   // Populate list of assigned gamemodes
-  array<string> randomModes = split( strip(modes[mapIndex]), " " );
+  array<string> modeStrings = split( strip(modes[mapIndex]), " " );
+  array<string> randomModes;
+
+  foreach (modeString in modeStrings) {
+    randomModes.append(modeString);
+    printl("- " + modeString + " available");
+
+    // set to true since we've found at least one map with defined modes
+    // If this remains false, we won't show game mode on the vote menu since it'll all be the same mode anyway
+    showModes = true;
+  }
 
   if (randomModes.len() > 0) { // If modes have been assigned
-    printl(maps[mapIndex] + " available modes are " + modes[mapIndex]);
     randomMode = randomModes[rndint(randomModes.len())];  // Select one random mode from available modes
   }
   else {
-    printl(maps[mapIndex] + " no gamemodes specified");
-  }
-
-  // Set to safe option if still undefined
-  if (randomMode.len() == 0) {
-    if (IsFFAGame()) randomMode = "ffa";
-    else randomMode = "tdm";
+    printl("- no valid gamemodes specified");
   }
 
   printl("- " + randomMode + " selected");
@@ -480,4 +522,19 @@ bool function IsInt(string num){
     } catch (exception){
         return false
     }
+}
+
+/* A gamemode with incompatible switching with previous mode is selected
+    We have already returned to lobby so now we are changing to the intended map.
+*/
+void function ChangeMapFromLobby_Threaded() {
+  wait 1;
+
+  string nextMap = GetConVarString("pv_nextmap");
+  string nextMode = GetConVarString("pv_nextmode");
+  if (nextMode == "") nextMode = "tdm";
+  SetConVarString("pv_nextmap", "");
+  SetConVarString("pv_nextmode", "");
+  SetCurrentPlaylist(nextMode); // Update gamemode for server browser
+  GameRules_ChangeMap(nextMap, nextMode);
 }
