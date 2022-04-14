@@ -98,10 +98,9 @@ table<string, string> modeNameTable = {
 void function VoteMapInit(){
 
     /* We might be in lobby because we are changing gamemodes */
-    if (GetMapName() == "mp_lobby" && GetConVarString("pv_nextmap").len() > 0) {
+    if (IsLobby()) {
       thread ChangeMapFromLobby_Threaded();
     }
-
 
     // add commands here. i added some varieants for accidents, however not for brain damage. do whatever :P
     AddClientCommandCallback("!vote", CommandVote) //!vote force 3 will force the map if your name is in adminNames
@@ -116,7 +115,7 @@ void function VoteMapInit(){
 
     // If defined, add additional maps cvar
     // These convars must be defined in mod.json therefore we specify the limits
-    for(int i = 2; i <= 4; i++) {
+    for(int i = 2; i <= 9; i++) {
       if (GetConVarString("pv_maps" + i).len() > 0) {
         cvar += "," + GetConVarString("pv_maps" + i);
       }
@@ -151,46 +150,11 @@ void function VoteMapInit(){
           else printl("- no gamemodes specified");
           modes.append(strip(modeList));
       }
+      else {
+        printl(mode[0] + " ignored - is current map");
+      }
     }
 
-/*
-    printl("aitdm - " + GetMaxTeamsForPlaylistName("aitdm"));
-    printl("at - " + GetMaxTeamsForPlaylistName("at"));
-    printl("coliseum - " + GetMaxTeamsForPlaylistName("coliseum"));
-    printl("cp - " + GetMaxTeamsForPlaylistName("cp"));
-    printl("ctf - " + GetMaxTeamsForPlaylistName("ctf"));
-    printl("fd_easy - " + GetMaxTeamsForPlaylistName("fd_easy"));
-    printl("fd_hard - " + GetMaxTeamsForPlaylistName("fd_hard"));
-    printl("fd_insane - " + GetMaxTeamsForPlaylistName("fd_insane"));
-    printl("fd_master - " + GetMaxTeamsForPlaylistName("fd_master"));
-    printl("fd_normal - " + GetMaxTeamsForPlaylistName("fd_normal"));
-    printl("lf - " + GetMaxTeamsForPlaylistName("lf"));
-    printl("lts - " + GetMaxTeamsForPlaylistName("lts"));
-    printl("mfd - " + GetMaxTeamsForPlaylistName("mfd"));
-    printl("ps - " + GetMaxTeamsForPlaylistName("ps"));
-    printl("solo - " + GetMaxTeamsForPlaylistName("solo"));
-    printl("tdm - " + GetMaxTeamsForPlaylistName("tdm"));
-    printl("ttdm - " + GetMaxTeamsForPlaylistName("ttdm"));
-    printl("alts - " + GetMaxTeamsForPlaylistName("alts"));
-    printl("attdm - " + GetMaxTeamsForPlaylistName("attdm"));
-    printl("ffa - " + GetMaxTeamsForPlaylistName("ffa"));
-    printl("fra - " + GetMaxTeamsForPlaylistName("fra"));
-    printl("holopilot_lf - " + GetMaxTeamsForPlaylistName("holopilot_lf"));
-    printl("rocket_lf - " + GetMaxTeamsForPlaylistName("rocket_lf"));
-    printl("turbo_lts - " + GetMaxTeamsForPlaylistName("turbo_lts"));
-    printl("turbo_ttdm - " + GetMaxTeamsForPlaylistName("turbo_ttdm"));
-    printl("chamber - " + GetMaxTeamsForPlaylistName("chamber"));
-    printl("ctf_comp - " + GetMaxTeamsForPlaylistName("ctf_comp"));
-    printl("fastball - " + GetMaxTeamsForPlaylistName("fastball"));
-    printl("gg - " + GetMaxTeamsForPlaylistName("gg"));
-    printl("hs - " + GetMaxTeamsForPlaylistName("hs"));
-    printl("inf - " + GetMaxTeamsForPlaylistName("inf"));
-    printl("kr - " + GetMaxTeamsForPlaylistName("kr"));
-    printl("sbox - " + GetMaxTeamsForPlaylistName("sbox"));
-    printl("sns - " + GetMaxTeamsForPlaylistName("sns"));
-    printl("tffa - " + GetMaxTeamsForPlaylistName("tffa"));
-    printl("tt - " + GetMaxTeamsForPlaylistName("tt"));
-*/
 }
 
 /*
@@ -198,6 +162,7 @@ void function VoteMapInit(){
  */
 
 void function PlayingMap(){
+
     wait 2
     if(!IsLobby()){
         while(voteMapEnabled && !mapsHaveBeenProposed){
@@ -333,19 +298,22 @@ void function ChangeMapBeforeServer(){
         nextMode = getRandomModeForMap(randomMapIndex);
     }
 
-    // change 1 sec before server does
     // Change immediately if next mode is different team size to current mode to prevent client kick
-    if (GetMaxTeamsForPlaylistName(GameRules_GetGameMode()) != GetMaxTeamsForPlaylistName(nextMode)) {
-      // If team size is different, a quick change to lobby will facilitate clients not being kicked
-      SetConVarString("pv_nextmap", nextMap); // We save which map we should be changing to into a convar
-      SetConVarString("pv_nextmode", nextMode);
+    if (GetPlayerArray().len() > 0 &&
+        (
+          GetMaxTeamsForPlaylistName(GameRules_GetGameMode()) != GetMaxTeamsForPlaylistName(nextMode) ||
+          GetMaxTeamsForPlaylistName(nextMode) > 2  // Return to lobby required for all FFA modes otherwise players will be assigned teams 2 and 3
+        )
+      ) {
+      // If team size is different, a quick map change to lobby will facilitate clients not being kicked
+      ServerCommand("ns_private_match_last_map " + nextMap);
+      ServerCommand("ns_private_match_last_mode " + nextMode);
       SetCurrentPlaylist( "private_match" );
       GameRules_ChangeMap( "mp_lobby", GameRules_GetGameMode() );
     }
-    else {
-      if (GetMaxTeamsForPlaylistName(nextMode) <= 2) wait GAME_POSTMATCH_LENGTH - 1 // No wait on FFA modes to prevent client kick
-      ServerCommand("setplaylist " + nextMode); // Update gamemode for server browser
-      SetCurrentPlaylist(nextMode);
+    else { // change 1 sec before server does
+      if (GetPlayerArray().len()) wait GAME_POSTMATCH_LENGTH - 1;
+      SetCurrentPlaylist(nextMode); // Update gamemode for server browser
       GameRules_ChangeMap(nextMap, nextMode);
     }
 }
@@ -528,13 +496,19 @@ bool function IsInt(string num){
     We have already returned to lobby so now we are changing to the intended map.
 */
 void function ChangeMapFromLobby_Threaded() {
-  wait 1;
+  ServerCommand("ns_private_match_countdown_length 0");
 
-  string nextMap = GetConVarString("pv_nextmap");
-  string nextMode = GetConVarString("pv_nextmode");
-  if (nextMode == "") nextMode = "tdm";
-  SetConVarString("pv_nextmap", "");
-  SetConVarString("pv_nextmode", "");
-  SetCurrentPlaylist(nextMode); // Update gamemode for server browser
-  GameRules_ChangeMap(nextMap, nextMode);
+  while (IsLobby()) {
+    //printl(Time() + " attempt start lobby");  // DEBUG
+
+    array<entity> players = GetPlayerArray();
+    foreach (entity p in players) {
+      ClientCommand( p, "PrivateMatchLaunch" );
+    }
+
+    WaitFrame();
+
+    // If for some reason we are in lobby and no players are present after some time, change to random map
+    if (Time() > 10) ChangeMapBeforeServer();
+  }
 }

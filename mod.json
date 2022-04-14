@@ -136,6 +136,10 @@
 			"DefaultValue": "6" // how many maps to propose. KEEP THIS LOWER THAN THE AMOUNT OF MAPS YOU HAVE IN pv_maps!!! 5 maps in pv_maps -> set this to 4 maximum
 		},
 		{
+			"Name": "pv_map_allow_change_ffa_type",
+			"DefaultValue": "0"
+		},
+		{
 			"Name": "pv_maps",
 			"DefaultValue": "mp_angel_city, mp_black_water_canal, mp_colony02, mp_drydock, mp_eden, mp_forwardbase_kodai, mp_glitch, mp_grave, mp_homestead, mp_lf_deck, mp_lf_meadow, mp_lf_stacks, mp_lf_township, mp_lf_traffic, mp_lf_uma, mp_relic02, mp_rise, mp_thaw, mp_wargames"
 			// below should be all maps, i wouldnt delete it :)
@@ -144,8 +148,11 @@
 		{ "Name": "pv_maps2", "DefaultValue": "" },
 		{ "Name": "pv_maps3", "DefaultValue": "" },
 		{ "Name": "pv_maps4", "DefaultValue": "" },
-		{ "Name": "pv_nextmap", "DefaultValue": "" },
-		{ "Name": "pv_nextmode", "DefaultValue": "" },
+		{ "Name": "pv_maps5", "DefaultValue": "" },
+		{ "Name": "pv_maps6", "DefaultValue": "" },
+		{ "Name": "pv_maps7", "DefaultValue": "" },
+		{ "Name": "pv_maps8", "DefaultValue": "" },
+		{ "Name": "pv_maps9", "DefaultValue": "" },
 		{
 			"Name": "pv_welcome_enabled",
 			"DefaultValue": "1" // show welcome msg, 1: true | 0: false

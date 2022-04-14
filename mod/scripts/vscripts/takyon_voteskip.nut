@@ -81,7 +81,7 @@ bool function CommandSkip(entity player, array<string> args){
 
 void function CheckIfEnoughSkipVotes(bool force = false){
     // check if enough have voted
-    if(playerSkipVoteNames.len() >= (1.0 * GetPlayerArray().len() * skipVotePercentage) || force){
+    if(playerSkipVoteNames.len() > (float(GetPlayerArray().len()) * skipVotePercentage) || force){
         if(mapsHaveBeenProposed){
             PVSetGameEndTime(1.0)}
         else{
@@ -92,7 +92,7 @@ void function CheckIfEnoughSkipVotes(bool force = false){
 }
 
 void function PVSetGameEndTime(float seconds){
-    if (IsRoundBased()) {
+    if (IsRoundBased() || IsSuddenDeathGameMode()) {
       float roundEndTime = Time() - expect float(GetServerVar("roundEndTime"));
       if (roundEndTime > seconds) seconds = roundEndTime; // If there's less time in the round left than we request, don't increase
       SetRoundEndTime(seconds); // Set round end timer - for aesthetics only
@@ -107,6 +107,7 @@ void function PVSetGameEndTime(float seconds){
 
 void function PostmatchMap_Threaded(float seconds) {
   wait seconds + 2.0; // Wait a couple seconds for fade effect
+
   if (IsSuddenDeathGameMode()) PostmatchMap(); // Going to postmatch does not work on SD modes e.g. ctf - It will just go to half time then SD
   else SetGameState( eGameState.Postmatch )
 }
