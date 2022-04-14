@@ -308,6 +308,9 @@ void function ChangeMapBeforeServer(){
       // If team size is different, a quick map change to lobby will facilitate clients not being kicked
       ServerCommand("ns_private_match_last_map " + nextMap);
       ServerCommand("ns_private_match_last_mode " + nextMode);
+      ServerCommand("ns_private_match_only_host_can_change_settings 1");
+      ServerCommand("ns_private_match_countdown_length 0");
+      SetConVarInt("pv_last_match_player_count", GetPlayerArray().len());
       SetCurrentPlaylist( "private_match" );
       GameRules_ChangeMap( "mp_lobby", GameRules_GetGameMode() );
     }
@@ -496,14 +499,16 @@ bool function IsInt(string num){
     We have already returned to lobby so now we are changing to the intended map.
 */
 void function ChangeMapFromLobby_Threaded() {
-  ServerCommand("ns_private_match_countdown_length 0");
 
   while (IsLobby()) {
     //printl(Time() + " attempt start lobby");  // DEBUG
 
     array<entity> players = GetPlayerArray();
-    foreach (entity p in players) {
-      ClientCommand( p, "PrivateMatchLaunch" );
+
+    if (players.len() >= GetConVarInt("pv_last_match_player_count") - 2) {  // We do -2 because some players might drop and if not, we don't care if they are on team 2 and 3
+      foreach (entity p in players) {
+        ClientCommand( p, "PrivateMatchLaunch" );
+      }
     }
 
     WaitFrame();

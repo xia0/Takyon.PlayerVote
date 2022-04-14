@@ -153,6 +153,7 @@
 		{ "Name": "pv_maps7", "DefaultValue": "" },
 		{ "Name": "pv_maps8", "DefaultValue": "" },
 		{ "Name": "pv_maps9", "DefaultValue": "" },
+		{ "Name": "pv_last_match_player_count", "DefaultValue": "0" },
 		{
 			"Name": "pv_welcome_enabled",
 			"DefaultValue": "1" // show welcome msg, 1: true | 0: false
