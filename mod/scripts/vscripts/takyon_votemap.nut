@@ -191,7 +191,6 @@ void function PlayingMap(){
                   // Check for team score on round based modes
                   || (IsRoundBased() && float(GameRules_GetTeamScore2(GameScore_GetWinningTeam())) / float(GetRoundScoreLimit_FromPlaylist()) >= mapTimeFrac)
                 )
-                && Time() > 5.0
                 && !mapsHaveBeenProposed) {
                 FillProposedMaps()
             }
