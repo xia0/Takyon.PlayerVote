@@ -404,7 +404,7 @@ void function ShowProposedMaps(entity player, string errorMsg = ""){
   for (int i = 1; i <= proposedMaps.len(); i++) {
 
     if (message.len() > 0) {
-      if ((i + 1) % 3 == 0) message += " \n"; // Put maps on a new line if they exceed this number
+      if ((i - 1) % 3 == 0) message += " \n"; // Put maps on a new line if they exceed this number
       else message += "  ·  "; // Otherwise, draw a divider between the maps
     }
 
