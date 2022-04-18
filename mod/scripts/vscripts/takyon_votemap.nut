@@ -270,6 +270,7 @@ bool function CommandVote(entity player, array<string> args){
 
     // message all players
     foreach(entity player in GetPlayerArray()){
+      //EmitSoundOnEntityOnlyToPlayer( player, player, "HUD_center_announcement_standard_1P" );
       ShowProposedMaps(player)
     }
 
@@ -404,7 +405,7 @@ void function ShowProposedMaps(entity player, string errorMsg = ""){
   for (int i = 1; i <= proposedMaps.len(); i++) {
 
     if (message.len() > 0) {
-      if ((i - 1) % 3 == 0) message += " \n"; // Put maps on a new line if they exceed this number
+      if ((i - 1) % 3 == 0) message += " \n"; // Put maps on a new line if map before exceeded this number
       else message += "  ·  "; // Otherwise, draw a divider between the maps
     }
 
@@ -450,6 +451,7 @@ void function FillProposedMaps(){
     // message all players
     foreach(entity player in GetPlayerArray()){
         ShowProposedMaps(player)
+        EmitSoundOnEntityOnlyToPlayer( player, player, "DataKnife_Hack_Spectre_Pt3" );
     }
 }
 
