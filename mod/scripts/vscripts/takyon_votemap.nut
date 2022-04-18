@@ -68,6 +68,7 @@ table<string, string> modeNameTable = {
     fd_master = "Frontier Defense (Master)",
     fd_normal = "Frontier Defense (Regular)",
     lf = "Live Fire",
+    speedball = "Live Fire",
     lts = "Last Titan Standing",
     mfd = "Marked For Death",
     ps = "Pilots vs. Pilots",
@@ -93,6 +94,7 @@ table<string, string> modeNameTable = {
     sns = "Sticks and Stones",
     tffa = "Titan FFA",
     tt = "Titan Tag"
+    hidden = "The Hidden"
 }
 
 void function VoteMapInit(){
@@ -315,8 +317,11 @@ void function ChangeMapBeforeServer(){
       GameRules_ChangeMap( "mp_lobby", GameRules_GetGameMode() );
     }
     else { // change 1 sec before server does
-      if (GetPlayerArray().len()) wait GAME_POSTMATCH_LENGTH - 1;
-      SetCurrentPlaylist(nextMode); // Update gamemode for server browser
+      if (GetPlayerArray().len() > 0) wait GAME_POSTMATCH_LENGTH - 1;
+
+      if (nextMode == "speedball") SetCurrentPlaylist("lf");  // Make exception for lf
+      else SetCurrentPlaylist(nextMode); // Update gamemode for server browser
+
       GameRules_ChangeMap(nextMap, nextMode);
     }
 }
@@ -499,6 +504,11 @@ bool function IsInt(string num){
     We have already returned to lobby so now we are changing to the intended map.
 */
 void function ChangeMapFromLobby_Threaded() {
+
+  /*
+  SetPlaylistVarOverride("scorelimit", "");
+  SetPlaylistVarOverride("roundscorelimit", "");
+  */
 
   while (IsLobby()) {
     //printl(Time() + " attempt start lobby");  // DEBUG
