@@ -270,7 +270,7 @@ bool function CommandVote(entity player, array<string> args){
 
     // message all players
     foreach(entity player in GetPlayerArray()){
-      //EmitSoundOnEntityOnlyToPlayer( player, player, "HUD_center_announcement_standard_1P" );
+		EmitSoundOnEntityOnlyToPlayer( message.player, message.player, "UI_InGame_FD_ArmoryPurchase" );
       ShowProposedMaps(player)
     }
 
