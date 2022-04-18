@@ -97,6 +97,21 @@ table<string, string> modeNameTable = {
     hidden = "The Hidden"
 }
 
+table<string, string> shortModeNameTable = {
+    aitdm = "Attr",
+    at = "BH",
+    coliseum = "Col",
+    cp = "AH",
+    speedball = "LF",
+    ps = "PVP",
+    holopilot_lf = "HOLO",
+    rocket_lf = "RA",
+    chamber = "1ITC",
+    fastball = "FB",
+    hs = "H&S",
+    inf = "Inf"
+}
+
 void function VoteMapInit(){
 
     /* We might be in lobby because we are changing gamemodes */
@@ -354,9 +369,14 @@ string function TryGetNormalizedMapName(string mapName){
     }
 }
 
-string function TryGetNormalizedModeName(string modeName) {
-    if (modeName in modeNameTable) return modeNameTable[modeName];
-    return modeName;
+string function TryGetNormalizedModeName(string modeName, bool short = false) {
+  if (short) {
+    if (modeName in shortModeNameTable) return shortModeNameTable[modeName];
+    else return modeName.toupper();
+  }
+
+  if (modeName in modeNameTable) return modeNameTable[modeName];
+  return modeName;
 }
 
 bool function IsMapNumValid(string x){
@@ -409,7 +429,7 @@ void function ShowProposedMaps(entity player, string errorMsg = ""){
       else message += "  ·  "; // Otherwise, draw a divider between the maps
     }
 
-    message += "⁽" + sup(i) + "⁾ " + proposedModes[i-1].toupper() + " " + TryGetNormalizedMapName(proposedMaps[i-1])
+    message += "⁽" + sup(i) + "⁾ " + TryGetNormalizedModeName(proposedModes[i-1], true) + " " + TryGetNormalizedMapName(proposedMaps[i-1])
 
     // Show how many votes this map currently has
     int voteDataIndex = FindMvdInVoteData(proposedMaps[i-1]);
