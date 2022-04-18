@@ -442,7 +442,7 @@ void function ShowProposedMaps(entity player, string errorMsg = ""){
   // Show prompt if user has not yet voted
   if (errorMsg.len() > 0) message = errorMsg + " \n" + message;
   if (!PlayerHasVoted(player, playerMapVoteNames)) message = "Vote in chat \n" + message;
-  SendHudMessage( player, message + " ", 1, 1, 240, 182, 27, 255, 0, 60, 120);
+  SendHudMessage( player, message + " ", 1, 1, 240, 182, 27, 255, 0, 180, 120);
 }
 
 void function FillProposedMaps(){
