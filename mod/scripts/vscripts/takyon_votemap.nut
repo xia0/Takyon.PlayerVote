@@ -395,7 +395,7 @@ void function ShowProposedMaps(entity player, string errorMsg = ""){
   }
 
     // message player
-    SendHudMessage( player, message, -0.925, 0.4, 255, 255, 255, 255, 0.15, 30, 1 )
+    SendHudMessage( player, message, -0.925, 0.4, 240, 182, 27, 255, 0.15, 30, 1 )
   */
 
 
@@ -405,7 +405,7 @@ void function ShowProposedMaps(entity player, string errorMsg = ""){
   for (int i = 1; i <= proposedMaps.len(); i++) {
 
     if (message.len() > 0) {
-      if ((i - 1) % 3 == 0) message += " \n"; // Put maps on a new line if map before exceeded this number
+      if ((i - 1) % 2 == 0) message += " \n"; // Put maps on a new line if map before exceeded this number
       else message += "  ·  "; // Otherwise, draw a divider between the maps
     }
 
@@ -421,7 +421,7 @@ void function ShowProposedMaps(entity player, string errorMsg = ""){
   // Show prompt if user has not yet voted
   if (errorMsg.len() > 0) message = errorMsg + " \n" + message;
   if (!PlayerHasVoted(player, playerMapVoteNames)) message = "Vote in chat \n" + message;
-  SendHudMessage( player, message + " ", 1, 1, 255, 255, 255, 255, 0, 30, 30);
+  SendHudMessage( player, message + " ", 1, 1, 240, 182, 27, 255, 0, 60, 120);
 }
 
 void function FillProposedMaps(){
@@ -444,7 +444,7 @@ void function FillProposedMaps(){
         }
     }
 
-    Chat_ServerBroadcast("\x1b[38;2;220;220;0m[PlayerVote] \x1b[0mTo vote type !vote number in chat. \x1b[38;2;0;220;220m(Ex. !vote 2)")
+    //Chat_ServerBroadcast("\x1b[38;2;220;220;0m[PlayerVote] \x1b[0mTo vote type !vote number in chat. \x1b[38;2;0;220;220m(Ex. !vote 2)")
     mapsProposalTimeLeft = Time()
     mapsHaveBeenProposed = true
 
@@ -589,4 +589,18 @@ array<string> function SplitStringToChars(string input) {
 		characters.append(input.slice(i, i+1));
 	}
 	return characters;
+}
+
+/* Returns a string with dots (colon, full stop) according to provided int
+*/
+string function IntToDots(int num, bool leftToRight = true) {
+  string output;
+  for (int i = 0; i < num; i += 2) {
+    output += ":";
+  }
+  if (i % 2 != 0) {
+    if (leftToRight) output += ".";
+    else output = "." + output;
+  }
+  return output;
 }
