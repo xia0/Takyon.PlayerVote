@@ -413,9 +413,9 @@ void function ShowProposedMaps(entity player, string errorMsg = ""){
 
     // Show how many votes this map currently has
     int voteDataIndex = FindMvdInVoteData(proposedMaps[i-1]);
-    //if (voteDataIndex >= 0) message += " " + sup(voteData[voteDataIndex].votes, true);
-    //else message += " " + sup(0, true);
-    message += IntToDots(i);
+    if (voteDataIndex >= 0) message += " " + sup(voteData[voteDataIndex].votes, true);
+    else message += " " + sup(0, true);
+
 
   }
 
