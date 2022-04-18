@@ -58,17 +58,25 @@ bool function CommandSkip(entity player, array<string> args){
             playerSkipVoteNames.append(player.GetPlayerName())
 
             // send message to everyone
+            /*
             for(int i = 0; i < GetPlayerArray().len(); i++){
                 if(playerSkipVoteNames.len() > 1) // semantics
                     SendHudMessageBuilder(GetPlayerArray()[i], playerSkipVoteNames.len() + MULTIPLE_SKIP_VOTES, 255, 200, 200)
                 else
                     SendHudMessageBuilder(GetPlayerArray()[i], playerSkipVoteNames.len() + ONE_SKIP_VOTE, 255, 200, 200)
 			}
+            */
+            if (!mapsHaveBeenProposed) {
+              string message = playerSkipVoteNames.len() + " player";
+              if (playerSkipVoteNames.len() != 1) message += " wants to skip this map "
+              message += " wants to skip this map "
+              SendHudMessageToAll(message + " ", 1, 1, 255, 255, 255, 255, 0, 30, 30);
+            }
         }
         else {
             // Doesnt let the player vote twice, name is saved so even on reconnect they cannot vote twice
             // Future update might check if the player is actually online but right now i am too tired
-            SendHudMessageBuilder(player, ALREADY_VOTED, 255, 200, 200)
+            //SendHudMessageBuilder(player, ALREADY_VOTED, 255, 200, 200)
         }
     }
     CheckIfEnoughSkipVotes()

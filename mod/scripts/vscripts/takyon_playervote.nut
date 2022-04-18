@@ -34,7 +34,7 @@ ClServer_MessageStruct function ChatCallback(ClServer_MessageStruct message) {
     // If the player only said a number, assume they are voting for a map
     if (mapsHaveBeenProposed) {
       string num = GetNumbersFromString(msg);
-      if (num.len() > 0 && num == strip(msg)) {
+      if (num.len() > 0) {
         msg = "!vote " + num;
       }
     }

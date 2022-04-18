@@ -204,7 +204,7 @@ bool function CommandVote(entity player, array<string> args){
 
         // check if voting is enabled
         if(!voteMapEnabled){
-            Chat_ServerPrivateMessage(player, "\x1b[38;2;220;0;0m" + COMMAND_DISABLED, false)
+            //Chat_ServerPrivateMessage(player, "\x1b[38;2;220;0;0m" + COMMAND_DISABLED, false)
             return false
         }
 
@@ -222,13 +222,15 @@ bool function CommandVote(entity player, array<string> args){
 
         // map num not a num
         if(args.len() < 1 || !IsInt(args[0])){
-            Chat_ServerPrivateMessage(player, "\x1b[38;2;220;0;0m" + MAP_VOTE_USAGE, false)
+            //Chat_ServerPrivateMessage(player, "\x1b[38;2;220;0;0m" + MAP_VOTE_USAGE, false)
+            ShowProposedMaps(player, MAP_VOTE_USAGE);
             return false
         }
 
         // check if num is valid
         if(!IsMapNumValid(args[0])){
-            Chat_ServerPrivateMessage(player, "\x1b[38;2;220;0;0m" + MAP_NUMBER_NOT_FOUND, false)
+            //Chat_ServerPrivateMessage(player, "\x1b[38;2;220;0;0m" + MAP_NUMBER_NOT_FOUND, false)
+            ShowProposedMaps(player, MAP_NUMBER_NOT_FOUND);
             return false
         }
 
@@ -239,9 +241,11 @@ bool function CommandVote(entity player, array<string> args){
                 return false
             }
 
+            /*
             for(int i = 0; i < GetPlayerArray().len(); i++){
                 SendHudMessageBuilder(GetPlayerArray()[i], ADMIN_VOTED_MAP, 255, 200, 200)
             }
+            */
             SetNextMap(args[0].tointeger(), true)
             return true
         }
@@ -253,13 +257,22 @@ bool function CommandVote(entity player, array<string> args){
         }
         else {
             // Doesnt let the player vote twice, name is saved so even on reconnect they cannot vote twice
-            Chat_ServerPrivateMessage(player, "\x1b[38;2;220;0;0m" + ALREADY_VOTED, false)
+            //Chat_ServerPrivateMessage(player, "\x1b[38;2;220;0;0m" + ALREADY_VOTED, false)
+            ShowProposedMaps(player, ALREADY_VOTED);
             return false
         }
     }
 
-    SendHudMessageBuilder(player, MAP_YOU_VOTED + TryGetNormalizedMapName(proposedMaps[args[0].tointeger()-1]), 200, 200, 200)
+    //SendHudMessageBuilder(player, MAP_YOU_VOTED + TryGetNormalizedMapName(proposedMaps[args[0].tointeger()-1]), 200, 200, 200)
+
+
     SetNextMap(args[0].tointeger())
+
+    // message all players
+    foreach(entity player in GetPlayerArray()){
+      ShowProposedMaps(player)
+    }
+
     return true
 }
 
@@ -353,7 +366,8 @@ bool function IsMapNumValid(string x){
     return true
 }
 
-void function ShowProposedMaps(entity player){
+void function ShowProposedMaps(entity player, string errorMsg = ""){
+  /*
   // create message
   string message = "";
   // Only show instructions if vote has not been cast yet
@@ -381,6 +395,32 @@ void function ShowProposedMaps(entity player){
 
     // message player
     SendHudMessage( player, message, -0.925, 0.4, 255, 255, 255, 255, 0.15, 30, 1 )
+  */
+
+
+  if (!mapsHaveBeenProposed) return;
+  string message;
+
+  for (int i = 1; i <= proposedMaps.len(); i++) {
+
+    if (message.len() > 0) {
+      if ((i + 1) % 3 == 0) message += " \n"; // Put maps on a new line if they exceed this number
+      else message += "  ·  "; // Otherwise, draw a divider between the maps
+    }
+
+    message += "⁽" + sup(i) + "⁾ " + proposedModes[i-1].toupper() + " " + TryGetNormalizedMapName(proposedMaps[i-1])
+
+    // Show how many votes this map currently has
+    int voteDataIndex = FindMvdInVoteData(proposedMaps[i-1]);
+    if (voteDataIndex >= 0) message += " " + sup(voteData[voteDataIndex].votes, true);
+    else message += " " + sup(0, true);
+
+  }
+
+  // Show prompt if user has not yet voted
+  if (errorMsg.len() > 0) message = errorMsg + " \n" + message;
+  if (!PlayerHasVoted(player, playerMapVoteNames)) message = "Vote in chat \n" + message;
+  SendHudMessage( player, message + " ", 1, 1, 255, 255, 255, 255, 0, 30, 30);
 }
 
 void function FillProposedMaps(){
@@ -403,14 +443,14 @@ void function FillProposedMaps(){
         }
     }
 
+    Chat_ServerBroadcast("\x1b[38;2;220;220;0m[PlayerVote] \x1b[0mTo vote type !vote number in chat. \x1b[38;2;0;220;220m(Ex. !vote 2)")
+    mapsProposalTimeLeft = Time()
+    mapsHaveBeenProposed = true
+
     // message all players
     foreach(entity player in GetPlayerArray()){
         ShowProposedMaps(player)
     }
-
-    Chat_ServerBroadcast("\x1b[38;2;220;220;0m[PlayerVote] \x1b[0mTo vote type !vote number in chat. \x1b[38;2;0;220;220m(Ex. !vote 2)")
-    mapsProposalTimeLeft = Time()
-    mapsHaveBeenProposed = true
 }
 
 /*  Returns a random gamemode as short string for provided map index.
@@ -504,11 +544,6 @@ bool function IsInt(string num){
 */
 void function ChangeMapFromLobby_Threaded() {
 
-  /*
-  SetPlaylistVarOverride("scorelimit", "");
-  SetPlaylistVarOverride("roundscorelimit", "");
-  */
-
   while (IsLobby()) {
     //printl(Time() + " attempt start lobby");  // DEBUG
 
@@ -525,4 +560,31 @@ void function ChangeMapFromLobby_Threaded() {
     // If for some reason we are in lobby and no players are present after some time, change to random map
     if (Time() > 10) ChangeMapBeforeServer();
   }
+}
+
+
+/* Converts a string to superscript or subscript unicode
+    Supports numbers 0-9 and parentheses
+*/
+string function sup(int input, bool sub = false) {
+  // ⁰¹²³⁴⁵⁶⁷⁸⁹⁽⁾₀₁₂₃₄₅₆₇₈₉₍₎
+  array<string> charSet;
+  if (sub) charSet = ["₀", "₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉"];
+  else charSet = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"];
+
+  string output;
+  array<string> inputArray = SplitStringToChars(input.tostring());
+  foreach (string c in inputArray) output += charSet[c.tointeger()];
+  return output;
+}
+
+/* Take a string and return an array of characters
+		Returns an array of strings containing 1 character each
+*/
+array<string> function SplitStringToChars(string input) {
+	array<string> characters = [];
+	for (int i = 0; i < input.len(); i++) {
+		characters.append(input.slice(i, i+1));
+	}
+	return characters;
 }
