@@ -28,6 +28,7 @@ string nextMap = ""
 string nextMode = ""
 array<string> spawnedPlayers= []
 global float mapsProposalTimeLeft = 0
+table<entity, int> playersVote;
 
 // do not remove maps from here, just add the ones you need!
 table<string, string> mapNameTable = {
@@ -135,6 +136,8 @@ void function VoteMapInit(){
 
       thread ChangeMapFromLobby_Threaded();
     }
+
+    AddCallback_OnClientDisconnected(OnPlayerDisconnected); // Add a callback to remove client's vote on disconnect
 
     // add commands here. i added some varieants for accidents, however not for brain damage. do whatever :P
     AddClientCommandCallback("!vote", CommandVote) //!vote force 3 will force the map if your name is in adminNames
@@ -283,15 +286,23 @@ bool function CommandVote(entity player, array<string> args){
         }
 
         // check if player has already voted
-        if(!PlayerHasVoted(player, playerMapVoteNames)){
+        //if(!PlayerHasVoted(player, playerMapVoteNames)){
+        if (!(player in playersVote)) {
             // add player to list of players who have voted
-            playerMapVoteNames.append(player.GetPlayerName())
+            //playerMapVoteNames.append(player.GetPlayerName())
+            playersVote[player] <- args[0].tointeger();
         }
         else {
             // Doesnt let the player vote twice, name is saved so even on reconnect they cannot vote twice
             //Chat_ServerPrivateMessage(player, "\x1b[38;2;220;0;0m" + ALREADY_VOTED, false)
-            ShowProposedMaps(player, ALREADY_VOTED);
-            return false
+            //ShowProposedMaps(player, ALREADY_VOTED);
+
+            if (playersVote[player] == args[0].tointeger()) return false; // Stop client from voting the same map again
+
+            // Remove player's last vote
+            voteData[FindMvdInVoteData(proposedMaps[playersVote[player]-1])].votes--;
+            // Update the player's vote
+            playersVote[player] = args[0].tointeger();
         }
     }
 
@@ -307,6 +318,18 @@ bool function CommandVote(entity player, array<string> args){
     }
 
     return true
+}
+
+void function OnPlayerDisconnected(entity player) {
+  if (!mapsHaveBeenProposed) return;
+  if (player in playersVote) {
+    int index = FindMvdInVoteData(proposedMaps[playersVote[player]-1]);
+    if (index >= 0) voteData[index].votes--;
+  }
+  foreach(entity p in GetPlayerArray()){
+    //EmitSoundOnEntityOnlyToPlayer( player, player, "UI_InGame_FD_ArmoryPurchase" );
+    ShowProposedMaps(p)
+  }
 }
 
 void function OnPlayerSpawnedMap(entity player){ // show the player that just joined the map vote
@@ -463,7 +486,7 @@ void function ShowProposedMaps(entity player, string errorMsg = ""){
 
   // Show prompt if user has not yet voted
   if (errorMsg.len() > 0) message = errorMsg + " \n" + message;
-  if (!PlayerHasVoted(player, playerMapVoteNames)) message = "Vote in chat \n" + message;
+  if (!(player in playersVote)) message = "Vote in chat \n" + message;
   SendHudMessage( player, message + " ", 1, 1, 240, 182, 27, 255, 0, 180, 120);
 }
 
@@ -471,7 +494,7 @@ void function FillProposedMaps(){
     if (mapsHaveBeenProposed) return; // Do not run again if maps have already been proposed
     printl("Proposing maps")
     if(howManyMapsToPropose >= maps.len()){
-        printl("\n\n[PLAYERVOTE][ERROR] pv_map_map_propose_amount is not lower than pv_maps! Set it to a lower number than the amount of maps in your map pool!\n\n")
+        printl("\n\n[playersVote][ERROR] pv_map_map_propose_amount is not lower than pv_maps! Set it to a lower number than the amount of maps in your map pool!\n\n")
         howManyMapsToPropose = maps.len()-1
     }
 
@@ -487,7 +510,7 @@ void function FillProposedMaps(){
         }
     }
 
-    //Chat_ServerBroadcast("\x1b[38;2;220;220;0m[PlayerVote] \x1b[0mTo vote type !vote number in chat. \x1b[38;2;0;220;220m(Ex. !vote 2)")
+    //Chat_ServerBroadcast("\x1b[38;2;220;220;0m[playersVote] \x1b[0mTo vote type !vote number in chat. \x1b[38;2;0;220;220m(Ex. !vote 2)")
     mapsProposalTimeLeft = Time()
     mapsHaveBeenProposed = true
 
