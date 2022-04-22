@@ -118,6 +118,8 @@ void function VoteMapInit(){
     if (IsLobby()) {
 
       // Fix for special modes
+      SetPlaylistVarOverride("featured_mode_all_holopilot", "0");
+      SetPlaylistVarOverride("featured_mode_rocket_arena", "0");
       switch( GetConVarString("ns_private_match_last_mode") ) {
         case "holopilot_lf":
           SetConVarString("ns_private_match_last_mode", "speedball");
@@ -344,10 +346,6 @@ void function ChangeMapBeforeServer(){
         // Check if we're allowing possible change to FFA gamemode if the server is empty
         nextMode = getRandomModeForMap(randomMapIndex);
     }
-
-    // Reset these riffs
-    SetPlaylistVarOverride("featured_mode_all_holopilot", "0");
-    SetPlaylistVarOverride("featured_mode_rocket_arena", "0");
 
     // Change immediately if next mode is different team size to current mode to prevent client kick
     if (GetPlayerArray().len() > 0 &&
