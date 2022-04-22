@@ -116,6 +116,25 @@ void function VoteMapInit(){
 
     /* We might be in lobby because we are changing gamemodes */
     if (IsLobby()) {
+
+      // Fix for special modes
+      switch( GetConVarString("ns_private_match_last_mode") ) {
+        case "holopilot_lf":
+          SetConVarString("ns_private_match_last_mode", "speedball");
+          SetPlaylistVarOverride("featured_mode_all_holopilot", "1");
+        break;
+
+        case "rocket_lf":
+          SetConVarString("ns_private_match_last_mode", "speedball");
+          SetPlaylistVarOverride("featured_mode_rocket_arena", "1");
+        break;
+
+        default:
+          SetPlaylistVarOverride("featured_mode_all_holopilot", "0");
+          SetPlaylistVarOverride("featured_mode_rocket_arena", "0");
+        break;
+      }
+
       thread ChangeMapFromLobby_Threaded();
     }
 
@@ -326,24 +345,6 @@ void function ChangeMapBeforeServer(){
 
         // Check if we're allowing possible change to FFA gamemode if the server is empty
         nextMode = getRandomModeForMap(randomMapIndex);
-    }
-
-    // Fix for special modes
-    switch( nextMode ) {
-      case "holopilot_lf":
-        nextMode = "speedball";
-        SetPlaylistVarOverride("featured_mode_all_holopilot", "1");
-      break;
-
-      case "rocket_lf":
-        nextMode = "speedball";
-        SetPlaylistVarOverride("featured_mode_rocket_arena", "1");
-      break;
-
-      default:
-        SetPlaylistVarOverride("featured_mode_all_holopilot", "0");
-        SetPlaylistVarOverride("featured_mode_rocket_arena", "0");
-      break;
     }
 
     // Change immediately if next mode is different team size to current mode to prevent client kick
