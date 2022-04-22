@@ -130,8 +130,6 @@ void function VoteMapInit(){
         break;
 
         default:
-          SetPlaylistVarOverride("featured_mode_all_holopilot", "0");
-          SetPlaylistVarOverride("featured_mode_rocket_arena", "0");
         break;
       }
 
@@ -346,6 +344,10 @@ void function ChangeMapBeforeServer(){
         // Check if we're allowing possible change to FFA gamemode if the server is empty
         nextMode = getRandomModeForMap(randomMapIndex);
     }
+
+    // Reset these riffs
+    SetPlaylistVarOverride("featured_mode_all_holopilot", "0");
+    SetPlaylistVarOverride("featured_mode_rocket_arena", "0");
 
     // Change immediately if next mode is different team size to current mode to prevent client kick
     if (GetPlayerArray().len() > 0 &&
