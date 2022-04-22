@@ -328,6 +328,24 @@ void function ChangeMapBeforeServer(){
         nextMode = getRandomModeForMap(randomMapIndex);
     }
 
+    // Fix for special modes
+    switch( nextMode ) {
+      case "holopilot_lf":
+        nextMode = "speedball";
+        SetPlaylistVarOverride("featured_mode_all_holopilot", "1");
+      break;
+
+      case "rocket_lf":
+        nextMode = "speedball";
+        SetPlaylistVarOverride("featured_mode_rocket_arena", "1");
+      break;
+
+      default:
+        SetPlaylistVarOverride("featured_mode_all_holopilot", "0");
+        SetPlaylistVarOverride("featured_mode_rocket_arena", "0");
+      break;
+    }
+
     // Change immediately if next mode is different team size to current mode to prevent client kick
     if (GetPlayerArray().len() > 0 &&
         (
