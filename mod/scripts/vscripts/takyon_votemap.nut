@@ -372,13 +372,11 @@ void function ChangeMapBeforeServer(){
     ServerCommand("setplaylistvaroverrides featured_mode_rocket_arena 0");
 
     // Change immediately if next mode is different team size to current mode to prevent client kick
-    if (GetPlayerArray().len() > 0 &&
-        (
-          GetMaxTeamsForPlaylistName(GameRules_GetGameMode()) != GetMaxTeamsForPlaylistName(nextMode)
-          || GetMaxTeamsForPlaylistName(nextMode) > 2  // Return to lobby required for all FFA modes otherwise players will be assigned teams 2 and 3
-          || nextMode == "holopilot_lf"
-          || nextMode == "rocket_lf"
-        )
+    if (
+        GetMaxTeamsForPlaylistName(GameRules_GetGameMode()) != GetMaxTeamsForPlaylistName(nextMode)
+        || GetMaxTeamsForPlaylistName(nextMode) > 2  // Return to lobby required for all FFA modes otherwise players will be assigned teams 2 and 3
+        || nextMode == "holopilot_lf"
+        || nextMode == "rocket_lf"
       ) {
       // If team size is different, a quick map change to lobby will facilitate clients not being kicked
       ServerCommand("ns_private_match_last_map " + nextMap);
