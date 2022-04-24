@@ -611,20 +611,23 @@ bool function IsInt(string num){
 void function ChangeMapFromLobby_Threaded() {
 
   while (IsLobby()) {
-    //printl(Time() + " attempt start lobby");  // DEBUG
-
+    // Wait until most players have loaded into the lobby
     array<entity> players = GetPlayerArray();
-
-    if (players.len() >= GetConVarInt("pv_last_match_player_count") - 2) {  // We do -2 because some players might drop and if not, we don't care if they are on team 2 and 3
+    if (players.len() > GetConVarInt("pv_last_match_player_count") - 2) {  // We do -2 because some players might drop and if not, we don't care if they are on team 2 and 3
       foreach (entity p in players) {
         ClientCommand( p, "PrivateMatchLaunch" );
       }
     }
 
-    WaitFrame();
+    // Start the next map if nobody is around to push start
+    if (Time() > 10) {
+      if (GetConVarString("ns_private_match_last_map") != "" && GetConVarString("ns_private_match_last_mode") != "") {
+        GameRules_ChangeMap(GetConVarString("ns_private_match_last_map"), GetConVarString("ns_private_match_last_mode"));
+      }
+      else ChangeMapBeforeServer();
+    }
 
-    // If for some reason we are in lobby and no players are present after some time, change to random map
-    if (Time() > 10) ChangeMapBeforeServer();
+    WaitFrame();
   }
 }
 
