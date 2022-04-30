@@ -619,7 +619,7 @@ void function ChangeMapFromLobby_Threaded() {
     // Wait until most players have loaded into the lobby
     // We do this to let the lobby organise players into FFA teams
     array<entity> players = GetPlayerArray();
-    if (players.len() > GetConVarInt("pv_last_match_player_count") - 2) {  // We do -2 because some players might drop and if not, we don't care if they are on team 2 and 3
+    if (players.len() >= GetConVarInt("pv_last_match_player_count")) { // -2?
       foreach (entity p in players) {
         ClientCommand( p, "PrivateMatchLaunch" );
       }
@@ -628,7 +628,8 @@ void function ChangeMapFromLobby_Threaded() {
     // Start the next map if nobody is around to push start
     if (Time() > 10) {
       if (GetConVarString("ns_private_match_last_map") != "" && GetConVarString("ns_private_match_last_mode") != "") {
-        SetCurrentPlaylist(GetConVarString("ns_private_match_last_mode"));
+        if (GetConVarString("ns_private_match_last_mode") == "speedball") SetCurrentPlaylist("lf");
+        else SetCurrentPlaylist(GetConVarString("ns_private_match_last_mode"));
         GameRules_ChangeMap(GetConVarString("ns_private_match_last_map"), GetConVarString("ns_private_match_last_mode"));
       }
       else ChangeMapBeforeServer();
