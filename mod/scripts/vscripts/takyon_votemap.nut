@@ -361,7 +361,7 @@ void function PostmatchMap(){ // change map before the server changes it lololol
 void function ChangeMapBeforeServer(){
 
     if(nextMap == "") { // if nextMap has not been determined, pick a random one
-        int randomMapIndex = RandomIntRange(0, maps.len());
+        int randomMapIndex = RandomInt(maps.len());
         nextMap = maps[randomMapIndex];
 
         // Check if we're allowing possible change to FFA gamemode if the server is empty
@@ -504,7 +504,7 @@ void function FillProposedMaps(){
     for(int i = 0; i < howManyMapsToPropose; i++){
         while(true){
             // get a random map from maps
-            int mapIndex = RandomIntRange(0, maps.len());
+            int mapIndex = RandomInt(maps.len());
             if(proposedMaps.find(maps[mapIndex]) == -1 && maps[mapIndex] != GetMapName()){
                 proposedMaps.append(maps[mapIndex])
                 proposedModes.append(getRandomModeForMap(mapIndex));  // Get possible game modes for this map
