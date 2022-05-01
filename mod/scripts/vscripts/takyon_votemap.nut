@@ -547,7 +547,8 @@ string function getRandomModeForMap(int mapIndex) {
   }
 
   if (randomModes.len() > 0) { // If modes have been assigned
-    randomMode = randomModes[RandomIntRange(0, randomModes.len())];  // Select one random mode from available modes
+    //randomMode = randomModes[RandomIntRange(0, randomModes.len())];  // Select one random mode from available modes
+    randomMode = randomModes.getrandom();
   }
   else {
     printl("- no valid gamemodes specified");
