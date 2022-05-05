@@ -600,7 +600,7 @@ int function FindMvdInVoteData(string mapName){ // returns -1 if not found
 }
 
 int function MapVotesSort(MapVotesData data1, MapVotesData data2)
-{
+{ 
   if ( data1.votes == data2.votes )
     return 0
   return data1.votes < data2.votes ? 1 : -1
