@@ -117,7 +117,6 @@ void function VoteMapInit(){
 
     /* We might be in lobby because we are changing gamemodes */
     if (IsLobby()) {
-
       // Fix for special modes
       switch( GetConVarString("ns_private_match_last_mode") ) {
         case "holopilot_lf":
@@ -384,10 +383,15 @@ void function ChangeMapBeforeServer(){
         || nextMode == "rocket_lf"
       ) {
       // If team size is different, a quick map change to lobby will facilitate clients not being kicked
-      ServerCommand("ns_private_match_last_map " + nextMap);
-      ServerCommand("ns_private_match_last_mode " + nextMode);
-      ServerCommand("ns_private_match_only_host_can_change_settings 1");
-      ServerCommand("ns_private_match_countdown_length 0");
+      //ServerCommand("ns_private_match_last_map " + nextMap);
+      //ServerCommand("ns_private_match_last_mode " + nextMode);
+      //ServerCommand("ns_private_match_only_host_can_change_settings 1");
+      //ServerCommand("ns_private_match_countdown_length 0");
+      SetConVarString("ns_private_match_last_map", nextMap);
+      SetConVarString("ns_private_match_last_mode", nextMode);
+      SetConVarBool("ns_private_match_only_host_can_change_settings", true);
+      SetConVarBool("ns_private_match_only_host_can_start", false);
+      SetConVarFloat("ns_private_match_countdown_length", 1);
       SetConVarInt("pv_last_match_player_count", GetPlayerArray().len());
       SetCurrentPlaylist( "private_match" );
       GameRules_ChangeMap( "mp_lobby", GameRules_GetGameMode() );
@@ -621,9 +625,12 @@ void function ChangeMapFromLobby_Threaded() {
     // We do this to let the lobby organise players into FFA teams
     array<entity> players = GetPlayerArray();
     if (players.len() >= GetConVarInt("pv_last_match_player_count")) { // -2?
+      //wait 2; // try this to stop crashing when switching to tffa?
+      players.reverse();
       foreach (entity p in players) {
         ClientCommand( p, "PrivateMatchLaunch" );
       }
+      wait (GetConVarFloat("ns_private_match_countdown_length") + 0.5);
     }
 
     // Start the next map if nobody is around to push start
