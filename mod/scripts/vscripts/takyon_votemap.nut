@@ -391,7 +391,7 @@ void function ChangeMapBeforeServer(){
       SetConVarString("ns_private_match_last_mode", nextMode);
       SetConVarBool("ns_private_match_only_host_can_change_settings", true);
       SetConVarBool("ns_private_match_only_host_can_start", false);
-      SetConVarFloat("ns_private_match_countdown_length", 1);
+      SetConVarFloat("ns_private_match_countdown_length", 0);
       SetConVarInt("pv_last_match_player_count", GetPlayerArray().len());
       SetCurrentPlaylist( "private_match" );
       GameRules_ChangeMap( "mp_lobby", GameRules_GetGameMode() );
@@ -404,6 +404,42 @@ void function ChangeMapBeforeServer(){
 
       GameRules_ChangeMap(nextMap, nextMode);
     }
+}
+
+/* A gamemode with incompatible switching with previous mode is selected
+    We have already returned to lobby so now we are changing to the intended map.
+*/
+void function ChangeMapFromLobby_Threaded() {
+  while (IsLobby()) {
+    // Wait until most players have loaded into the lobby
+    // We do this to let the lobby organise players into FFA teams
+    array<entity> players = GetPlayerArray();
+    if (players.len() > 0 && players.len() >= GetConVarInt("pv_last_match_player_count")) { // -2?
+      /*
+      players.reverse();
+      foreach (entity p in players) {
+        ClientCommand( p, "PrivateMatchLaunch" );
+      }
+      */
+      wait 1;
+      //SetConVarBool( "ns_private_match_only_host_can_start", false )
+      ClientCommand( GetPlayerArray().top(), "PrivateMatchLaunch" );
+      //SetConVarBool( "ns_private_match_only_host_can_start", true )
+      //wait (GetConVarFloat("ns_private_match_countdown_length") + 0.5);
+    }
+
+    // Start the next map if nobody is around to push start
+    if (Time() > 10) {
+      if (GetConVarString("ns_private_match_last_map") != "" && GetConVarString("ns_private_match_last_mode") != "") {
+        if (GetConVarString("ns_private_match_last_mode") == "speedball") SetCurrentPlaylist("lf");
+        else SetCurrentPlaylist(GetConVarString("ns_private_match_last_mode"));
+        GameRules_ChangeMap(GetConVarString("ns_private_match_last_map"), GetConVarString("ns_private_match_last_mode"));
+      }
+      else ChangeMapBeforeServer();
+    }
+
+    WaitFrame();
+  }
 }
 
 /*
@@ -615,40 +651,6 @@ bool function IsInt(string num){
     }
 }
 
-/* A gamemode with incompatible switching with previous mode is selected
-    We have already returned to lobby so now we are changing to the intended map.
-*/
-void function ChangeMapFromLobby_Threaded() {
-
-  while (IsLobby()) {
-    // Wait until most players have loaded into the lobby
-    // We do this to let the lobby organise players into FFA teams
-    array<entity> players = GetPlayerArray();
-    if (players.len() >= GetConVarInt("pv_last_match_player_count")) { // -2?
-      //wait 2; // try this to stop crashing when switching to tffa?
-      /*
-      players.reverse();
-      foreach (entity p in players) {
-        ClientCommand( p, "PrivateMatchLaunch" );
-      }
-      */
-      ClientCommand( players.top(), "PrivateMatchLaunch" );
-      wait (GetConVarFloat("ns_private_match_countdown_length") + 0.5);
-    }
-
-    // Start the next map if nobody is around to push start
-    if (Time() > 10) {
-      if (GetConVarString("ns_private_match_last_map") != "" && GetConVarString("ns_private_match_last_mode") != "") {
-        if (GetConVarString("ns_private_match_last_mode") == "speedball") SetCurrentPlaylist("lf");
-        else SetCurrentPlaylist(GetConVarString("ns_private_match_last_mode"));
-        GameRules_ChangeMap(GetConVarString("ns_private_match_last_map"), GetConVarString("ns_private_match_last_mode"));
-      }
-      else ChangeMapBeforeServer();
-    }
-
-    WaitFrame();
-  }
-}
 
 
 /* Converts a string to superscript or subscript unicode
